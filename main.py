@@ -3,13 +3,10 @@ from tkinter.filedialog import askopenfilename
 from tkinter import messagebox
 import os
 import cv2
-from numpy import result_type
 from signature import match
 
-
-# Mach Threshold
+# Match Threshold
 THRESHOLD = 85
-
 
 def browsefunc(ent):
     filename = askopenfilename(filetypes=([
@@ -18,15 +15,11 @@ def browsefunc(ent):
         ("image", ".jpg"),
     ]))
     ent.delete(0, tk.END)
-    ent.insert(tk.END, filename)  # add this
-
+    ent.insert(tk.END, filename)
 
 def capture_image_from_cam_into_temp(sign=1):
     cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-
     cv2.namedWindow("test")
-
-    # img_counter = 0
 
     while True:
         ret, frame = cam.read()
@@ -37,93 +30,86 @@ def capture_image_from_cam_into_temp(sign=1):
 
         k = cv2.waitKey(1)
         if k % 256 == 27:
-            # ESC pressed
             print("Escape hit, closing...")
             break
         elif k % 256 == 32:
-            # SPACE pressed
             if not os.path.isdir('temp'):
-                os.mkdir('temp', mode=0o777)  # make sure the directory exists
-            # img_name = "./temp/opencv_frame_{}.png".format(img_counter)
-            if(sign == 1):
-                img_name = "./temp/test_img1.png"
-            else:
-                img_name = "./temp/test_img2.png"
+                os.mkdir('temp', mode=0o777)
+            img_name = "./temp/test_img1.png" if sign == 1 else "./temp/test_img2.png"
             print('imwrite=', cv2.imwrite(filename=img_name, img=frame))
             print("{} written!".format(img_name))
-            # img_counter += 1
     cam.release()
     cv2.destroyAllWindows()
     return True
 
-
 def captureImage(ent, sign=1):
-    if(sign == 1):
-        filename = os.getcwd()+'\\temp\\test_img1.png'
-    else:
-        filename = os.getcwd()+'\\temp\\test_img2.png'
-    # messagebox.showinfo(
-    #     'SUCCESS!!!', 'Press Space Bar to click picture and ESC to exit')
-    res = None
-    res = messagebox.askquestion(
-        'Click Picture', 'Press Space Bar to click picture and ESC to exit')
+    filename = os.getcwd() + '\\temp\\test_img1.png' if sign == 1 else os.getcwd() + '\\temp\\test_img2.png'
+    res = messagebox.askquestion('Click Picture', 'Press Space Bar to click picture and ESC to exit')
     if res == 'yes':
         capture_image_from_cam_into_temp(sign=sign)
         ent.delete(0, tk.END)
         ent.insert(tk.END, filename)
     return True
 
-
 def checkSimilarity(window, path1, path2):
     result = match(path1=path1, path2=path2)
     if(result <= THRESHOLD):
-        messagebox.showerror("Failure: Signatures Do Not Match",
-                             "Signatures are "+str(result)+f" % similar!!")
-        pass
+        messagebox.showerror("Failure: Signatures Do Not Match", "Signatures are "+str(result)+f" % similar!!")
     else:
-        messagebox.showinfo("Success: Signatures Match",
-                            "Signatures are "+str(result)+f" % similar!!")
+        messagebox.showinfo("Success: Signatures Match", "Signatures are "+str(result)+f" % similar!!")
     return True
-
 
 root = tk.Tk()
 root.title("Signature Matching")
-root.geometry("500x700")  # 300x200
-uname_label = tk.Label(root, text="Compare Two Signatures:", font=10)
-uname_label.place(x=90, y=50)
+root.geometry("500x700")
 
-img1_message = tk.Label(root, text="Signature 1", font=10)
-img1_message.place(x=10, y=120)
+# Centering elements
+frame = tk.Frame(root)
+frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-image1_path_entry = tk.Entry(root, font=10)
-image1_path_entry.place(x=150, y=120)
+# Add heading
+heading_label = tk.Label(frame, text="Compare the Signature Here", font=("Helvetica", 14, "bold"))
+heading_label.pack(pady=20)
 
-img1_capture_button = tk.Button(
-    root, text="Capture", font=10, command=lambda: captureImage(ent=image1_path_entry, sign=1))
-img1_capture_button.place(x=400, y=90)
+uname_label = tk.Label(frame, text="Compare Two Signatures:", font=10)
+uname_label.pack(pady=10)
 
-img1_browse_button = tk.Button(
-    root, text="Browse", font=10, command=lambda: browsefunc(ent=image1_path_entry))
-img1_browse_button.place(x=400, y=140)
+img1_message = tk.Label(frame, text="Signature 1", font=10)
+img1_message.pack(pady=5)
 
-image2_path_entry = tk.Entry(root, font=10)
-image2_path_entry.place(x=150, y=240)
+image1_path_entry = tk.Entry(frame, font=10, width=40)
+image1_path_entry.pack(pady=5)
 
-img2_message = tk.Label(root, text="Signature 2", font=10)
-img2_message.place(x=10, y=250)
+img1_buttons_frame = tk.Frame(frame)
+img1_buttons_frame.pack(pady=5)
 
-img2_capture_button = tk.Button(
-    root, text="Capture", font=10, command=lambda: captureImage(ent=image2_path_entry, sign=2))
-img2_capture_button.place(x=400, y=210)
+img1_capture_button = tk.Button(img1_buttons_frame, text="Capture", font=10, bg="lightblue", command=lambda: captureImage(ent=image1_path_entry, sign=1))
+img1_capture_button.pack(side=tk.LEFT, padx=5)
 
-img2_browse_button = tk.Button(
-    root, text="Browse", font=10, command=lambda: browsefunc(ent=image2_path_entry))
-img2_browse_button.place(x=400, y=260)
+img1_browse_button = tk.Button(img1_buttons_frame, text="Browse", font=10, bg="lightgreen", command=lambda: browsefunc(ent=image1_path_entry))
+img1_browse_button.pack(side=tk.LEFT, padx=5)
 
-compare_button = tk.Button(
-    root, text="Compare", font=10, command=lambda: checkSimilarity(window=root,
-                                                                   path1=image1_path_entry.get(),
-                                                                   path2=image2_path_entry.get(),))
+separator = tk.Frame(frame, height=2, bd=1, relief=tk.SUNKEN)
+separator.pack(fill=tk.X, pady=20)
 
-compare_button.place(x=200, y=320)
+img2_message = tk.Label(frame, text="Signature 2", font=10)
+img2_message.pack(pady=5)
+
+image2_path_entry = tk.Entry(frame, font=10, width=40)
+image2_path_entry.pack(pady=5)
+
+img2_buttons_frame = tk.Frame(frame)
+img2_buttons_frame.pack(pady=5)
+
+img2_capture_button = tk.Button(img2_buttons_frame, text="Capture", font=10, bg="lightblue", command=lambda: captureImage(ent=image2_path_entry, sign=2))
+img2_capture_button.pack(side=tk.LEFT, padx=5)
+
+img2_browse_button = tk.Button(img2_buttons_frame, text="Browse", font=10, bg="lightgreen", command=lambda: browsefunc(ent=image2_path_entry))
+img2_browse_button.pack(side=tk.LEFT, padx=5)
+
+compare_button = tk.Button(frame, text="Compare", font=10, bg="orange", command=lambda: checkSimilarity(window=root,
+                                                                                                        path1=image1_path_entry.get(),
+                                                                                                        path2=image2_path_entry.get()))
+compare_button.pack(pady=20)
+
 root.mainloop()
